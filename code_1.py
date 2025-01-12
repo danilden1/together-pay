@@ -62,7 +62,13 @@ def calculatePaymentProcess(payment_matrix: pd.DataFrame, transaction: pd.DataFr
             else:
                 payments.loc[(payments['to'] == t.loc["Who"]) & (payments['from'] == user), 'sum'] -= sum
             
-    
+    payments.drop(payments[payments['sum'] == 0].index, inplace=True)
+    print(payments)
+    for idx, p in payments.iterrows():
+        if p["sum"] < 0:
+            print(p)
+            payments.loc[(payments['from'] == p.loc["to"]), "sum"] += p["sum"]
+            payments.drop(idx, inplace=True)
     return payments
 
 

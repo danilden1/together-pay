@@ -29,8 +29,43 @@ def calcPaymentMatrix(data: pd.DataFrame, unique_names: list) -> pd.DataFrame:
             payment_matrix.at[who, whom] = total_paid
     return payment_matrix
 
-def calculateReport(data: pd.DataFrame):
-    return 0
+
+def preparePaymentTable(data: pd.DataFrame, users: list) -> pd.DataFrame:
+    df = pd.DataFrame(columns=['to', 'from', 'sum'])
+    for u in users:
+        for us in users:
+            if u == us:
+                continue
+            new_row = {"to": u,  "from": us, "sum": 0}
+            df = df.append(new_row, ignore_index=True)
+    # Create the DataFrame
+
+    return df
+
+def getUsedListFromTransaction(transaction: pd.DataFrame, all_users: list):
+    if (transaction["Who use it"] == "ALL"):
+        return all_users
+    name_list = transaction["Who use it"].split(',')
+    print(name_list)
+    return name_list
+    
+
+def calculatePaymentProcess(payment_matrix: pd.DataFrame, transaction: pd.DataFrame, users: list) -> pd.DataFrame:
+    payments = preparePaymentTable(payment_matrix, users)
+    
+    for idx, t in transaction.iterrows():
+        used_list = getUsedListFromTransaction(t, users)
+        sum = t["Cost"] / len(used_list)
+        for user in used_list:
+            if t["To whom"] not in users:
+                payments.loc[(payments['to'] == t.loc["Who"]) & (payments['from'] == user), 'sum'] += sum
+            else:
+                payments.loc[(payments['to'] == t.loc["Who"]) & (payments['from'] == user), 'sum'] -= sum
+            
+    
+    return payments
+
+
 
 def main():
     args = sys.argv[1:]  # Skip the first argument (script name)
@@ -42,8 +77,7 @@ def main():
     file_path = args[0]  # Replace with your actual file path
     data = pd.read_csv(file_path,encoding='utf-8')
 
-    print(data.head())
-
+    print(data)
 
     # Convert to a list if needed and print the result
     unique_names, unique_user = detUniqueUsers(data, outPayName)    
@@ -51,6 +85,12 @@ def main():
 
     print("Payment Matrix:")
     print(payment_matrix)
+
+    print("report Matrix:")
+    report = calculatePaymentProcess(payment_matrix, data, unique_user)
+    print(report)
+
+
 
 
 if __name__ == "__main__":
